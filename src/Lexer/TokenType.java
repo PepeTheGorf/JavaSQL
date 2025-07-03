@@ -4,6 +4,9 @@ public enum TokenType {
     // Keywords
     SELECT, FROM, WHERE, INSERT, INTO, VALUES,
     UPDATE, SET, DELETE, CREATE, TABLE, AND, OR, NOT, NULL, IS,
+    
+    // Data types
+    INTEGER, VARCHAR,
 
     // Identifiers and literals
     IDENTIFIER, STRING_LITERAL, NUMBER_LITERAL,

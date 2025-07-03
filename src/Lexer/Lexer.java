@@ -27,7 +27,7 @@ public class Lexer {
                 }
                 i--;
                 
-                switch (lexemeBuilder.toString()) {
+                switch (lexemeBuilder.toString().toUpperCase()) {
                     case "SELECT" -> list.add(new Token(TokenType.SELECT, "SELECT"));
                     case "FROM" -> list.add(new Token(TokenType.FROM, "FROM"));
                     case "WHERE" -> list.add(new Token(TokenType.WHERE, "WHERE"));
@@ -44,6 +44,8 @@ public class Lexer {
                     case "NOT" -> list.add(new Token(TokenType.NOT, "NOT"));
                     case "NULL" -> list.add(new Token(TokenType.NULL, "NULL"));
                     case "IS" -> list.add(new Token(TokenType.IS, "IS"));
+                    case "INTEGER" -> list.add(new Token(TokenType.INTEGER, "INTEGER"));
+                    case "VARCHAR" -> list.add(new Token(TokenType.VARCHAR, "VARCHAR"));
                     default -> list.add(new Token(TokenType.IDENTIFIER, lexemeBuilder.toString()));
                 }
                  
@@ -111,7 +113,7 @@ public class Lexer {
                 }
             }
         }
-        list.add(new Token(TokenType.EOF, "EOF"));
+        //todo: uncomment later list.add(new Token(TokenType.EOF, "EOF"));
         return list;
     }
 }
