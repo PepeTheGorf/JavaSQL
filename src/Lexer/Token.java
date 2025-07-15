@@ -34,8 +34,14 @@ public class Token {
                this.tokenType.equals(TokenType.LEFT_PAREN) || this.tokenType.equals(TokenType.RIGHT_PAREN); 
     }
     
+    public boolean isFunctionCall() {
+        return this.tokenType.equals(TokenType.SUM) || this.tokenType.equals(TokenType.AVG) || this.tokenType.equals(TokenType.COUNT) || this.tokenType.equals(TokenType.MAX) || this.tokenType.equals(TokenType.MIN);
+    }
+    
     public int getPrecedence() {
         return switch (this.tokenType) {
+            case TokenType.SUBQUERY -> 8;
+            case TokenType.SUM, TokenType.AVG, TokenType.COUNT, TokenType.MAX, TokenType.MIN -> 7;
             case TokenType.ASTERISK, TokenType.SLASH -> 6;
             case TokenType.PLUS, TokenType.MINUS -> 5;
             case TokenType.GREATER_THAN, TokenType.LESS_THAN, TokenType.GREATER_EQUAL, TokenType.LESS_EQUAL -> 4;
@@ -75,4 +81,7 @@ public class Token {
         return String.format("'%s' [%s]", lexeme, tokenType);
     }
 
+    public boolean isSubQuery() {
+        return this.tokenType.equals(TokenType.SUBQUERY);
+    }
 }

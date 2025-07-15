@@ -21,7 +21,7 @@ public class Lexer {
             char ch = chars.get(i);
             if(Character.isAlphabetic(ch)) {
                 StringBuilder lexemeBuilder = new StringBuilder();
-                while (i < chars.size() && Character.isAlphabetic(chars.get(i))) {
+                while (i < chars.size() && (Character.isAlphabetic(chars.get(i)) || chars.get(i) == '_')) {
                     lexemeBuilder.append(chars.get(i));
                     i++;
                 }
@@ -46,6 +46,14 @@ public class Lexer {
                     case "IS" -> list.add(new Token(TokenType.IS, "IS"));
                     case "INTEGER" -> list.add(new Token(TokenType.INTEGER, "INTEGER"));
                     case "VARCHAR" -> list.add(new Token(TokenType.VARCHAR, "VARCHAR"));
+                    case "AS" -> list.add(new Token(TokenType.AS, "AS"));
+                    case "SUM" -> list.add(new Token(TokenType.SUM, "SUM"));
+                    case "AVG" -> list.add(new Token(TokenType.AVG, "AVG"));
+                    case "COUNT" -> list.add(new Token(TokenType.COUNT, "COUNT"));
+                    case "MAX" -> list.add(new Token(TokenType.MAX, "MAX"));
+                    case "MIN" -> list.add(new Token(TokenType.MIN, "MIN"));
+                    case "GROUP_BY" -> list.add(new Token(TokenType.GROUP_BY, "GROUP_BY"));
+                    case "HAVING" -> list.add(new Token(TokenType.HAVING, "HAVING"));
                     default -> list.add(new Token(TokenType.IDENTIFIER, lexemeBuilder.toString()));
                 }
                  
@@ -100,12 +108,25 @@ public class Lexer {
                     case ',' -> list.add(new Token(TokenType.COMMA, ","));
                     case '\'' -> {
                         i++;
+                        int startPos = i;
                         StringBuilder lexemeBuilder = new StringBuilder();
-                        while (i < chars.size() && Character.isAlphabetic(chars.get(i))) {
+                        while (i < chars.size() && (Character.isAlphabetic(chars.get(i)) || Character.isDigit(chars.get(i)) || Character.isWhitespace(chars.get(i)))) {
                             lexemeBuilder.append(chars.get(i));
                             i++;
                         }
-                        if(chars.size() == i || chars.get(i) != '\'') throw new LexerException("Invalid character found at position " + i + ", expected \"'\"");
+                        String errorMessage = """
+                                Invalid character literal:
+                                %s
+                                %s^︎︎
+                                %s╰─── Here (Missing closing quote for this string literal)
+                                """.formatted(
+                                query,
+                                " ".repeat(startPos),
+                                " ".repeat(startPos)
+                        );                 
+                        if(chars.size() == i || chars.get(i) != '\'') {
+                            throw new LexerException(errorMessage);
+                        }
                         
                         list.add(new Token(TokenType.STRING_LITERAL, lexemeBuilder.toString(), lexemeBuilder.toString()));
                     }
@@ -113,7 +134,7 @@ public class Lexer {
                 }
             }
         }
-        //todo: uncomment later list.add(new Token(TokenType.EOF, "EOF"));
+        list.add(new Token(TokenType.EOF, "EOF"));
         return list;
     }
 }

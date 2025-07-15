@@ -12,7 +12,9 @@ import Parser.Types.Column;
 import Parser.Types.DataType;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Parser {
     
@@ -107,7 +109,7 @@ public class Parser {
             if(nextToken.getTokenType().equals(TokenType.RIGHT_PAREN)) break;
         }
         expectNextOrThrow(TokenType.SEMICOLON);
-        
+        expectNextOrThrow(TokenType.EOF);
         return new CreateStatement(tableName.getLexeme(), columns);
     }
     
@@ -141,38 +143,104 @@ public class Parser {
             
             if(nextToken.getTokenType().equals(TokenType.SEMICOLON)) break;
         }
+        expectNextOrThrow(TokenType.EOF);
         return new InsertStatement(tableName.getLexeme(), rows);
     }
     
-    //SELECT Id, Name FROM Users;
+    //SELECT Id AS 'hehe', Name FROM Users;
     public SelectStatement parseSelect() {
         List<Expression> columns = new ArrayList<>();
+        Map<Integer, String> columnAliases = new HashMap<>();
+        List<String> groupBy = null;
+        int columnIndex = -1;
         while(true) {
             columns.add(parseExpression());
             
             Token nextToken = getNextToken();
-            expectNextOrThrow(List.of(TokenType.COMMA, TokenType.FROM));
+            expectNextOrThrow(List.of(TokenType.COMMA, TokenType.FROM, TokenType.AS));
             
+            columnIndex++;
+            
+            if(nextToken.getTokenType().equals(TokenType.FROM)) break;
+            if(nextToken.getTokenType().equals(TokenType.COMMA)) continue;
+            
+            
+            if(nextToken.getTokenType().equals(TokenType.AS)) {
+                Token columnAlias = getNextToken();
+                expectNextOrThrow(TokenType.STRING_LITERAL);
+                
+                columnAliases.put(columnIndex, columnAlias.getLiteral().toString());
+            }
+            
+            nextToken = getNextToken();
+            expectNextOrThrow(List.of(TokenType.COMMA, TokenType.FROM));
             if(nextToken.getTokenType().equals(TokenType.FROM)) break;
         }
         Token tableName = getNextToken();
         expectNextOrThrow(TokenType.IDENTIFIER);
         
-        expectNextOrThrow(TokenType.SEMICOLON);
+        Token nextToken = getNextToken();
+        expectNextOrThrow(List.of(TokenType.WHERE, TokenType.GROUP_BY, TokenType.SEMICOLON, TokenType.RIGHT_PAREN));
+        if(nextToken.getTokenType().equals(TokenType.SEMICOLON) || nextToken.getTokenType().equals(TokenType.RIGHT_PAREN)) return new SelectStatement(tableName.getLexeme(), columns, columnAliases);
         
-        return new SelectStatement(tableName.getLexeme(), columns);
+        Expression whereClause = null;
+        Expression havingClause = null;
+        if(nextToken.getTokenType().equals(TokenType.WHERE)) {
+            whereClause = parseExpression();
+            nextToken = getNextToken();
+        }
+        
+        if(nextToken.getTokenType().equals(TokenType.GROUP_BY)) {
+            groupBy = new ArrayList<>();
+            if(whereClause != null) advance();
+            while(true) {
+                nextToken = getNextToken();
+                expectNextOrThrow(List.of(TokenType.IDENTIFIER, TokenType.HAVING, TokenType.SEMICOLON, TokenType.COMMA));
+                
+                
+                if(nextToken.getTokenType().equals(TokenType.HAVING) || nextToken.getTokenType().equals(TokenType.SEMICOLON)) break;
+                if(nextToken.getTokenType().equals(TokenType.COMMA)) continue;
+                
+                
+                groupBy.add(nextToken.getLexeme());
+            }
+            
+            if(nextToken.getTokenType().equals(TokenType.HAVING)) {
+                havingClause = parseExpression();
+                expectNextOrThrow(TokenType.SEMICOLON);
+            }
+        }
+        if(havingClause == null && groupBy == null) expectNextOrThrow(TokenType.SEMICOLON);
+        expectNextOrThrow(TokenType.EOF);
+        return new SelectStatement(tableName.getLexeme(), columns, whereClause, columnAliases, havingClause, groupBy);
     }
     //INSERT INTO Users VALUES (1 + 1 + 2,'Bob'),(2,'John');
+    
+    
+    //SELECT Salary FROM Users WHERE Salary > (SELECT AVG(Salary) FROM Users);
     private Expression parseExpression() {
         List<Token> expressionTokens = new ArrayList<>();
         int parenCounter = 0;
         while(true) {
             Token nextToken = getNextToken();
-            if(nextToken.getTokenType().equals(TokenType.COMMA) || nextToken.getTokenType().equals(TokenType.FROM)) break;
+            if(nextToken.getTokenType().equals(TokenType.COMMA) || nextToken.getTokenType().equals(TokenType.FROM) || nextToken.getTokenType().equals(TokenType.SEMICOLON) || nextToken.getTokenType().equals(TokenType.AS) || nextToken.getTokenType().equals(TokenType.GROUP_BY)) {
+                break;
+            }
             if(nextToken.getTokenType().equals(TokenType.LEFT_PAREN)) parenCounter++;
             
             if(nextToken.getTokenType().equals(TokenType.RIGHT_PAREN)) {
                 if(parenCounter-- == 0) break;
+            }
+            
+            if(nextToken.getTokenType().equals(TokenType.SELECT)) {
+                advance();
+                expressionTokens.add(new Token(TokenType.SUBQUERY, "SUBQUERY", parseSelect()));
+                expressionTokens.add(new Token(TokenType.RIGHT_PAREN, ")"));
+                
+                nextToken = getNextToken();
+                if(nextToken.getTokenType().equals(TokenType.COMMA) || nextToken.getTokenType().equals(TokenType.FROM) || nextToken.getTokenType().equals(TokenType.SEMICOLON) || nextToken.getTokenType().equals(TokenType.AS) || nextToken.getTokenType().equals(TokenType.GROUP_BY)) {
+                    break;
+                }
             }
             
             expressionTokens.add(nextToken);

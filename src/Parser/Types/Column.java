@@ -2,10 +2,15 @@ package Parser.Types;
 
 import Lexer.TokenType;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 public class Column implements Serializable {
-    
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+
     private String name;
     private Integer maxLength;
     private TokenType dataType;

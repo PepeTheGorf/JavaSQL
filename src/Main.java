@@ -1,27 +1,48 @@
+import Executor.QueryExecutor;
+import FileManager.FileManager;
 import Lexer.Lexer;
-import Parser.Expression.ExpressionParser;
+import Parser.Expression.Expression;
 import Parser.Parser;
+import Parser.Statement.CreateStatement;
+import Parser.Statement.SelectStatement;
+import Parser.Statement.Statement;
+import Parser.Types.Row;
+import Parser.Types.Table;
+import Parser.Test;
 
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Random;
 import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        Lexer lexer = new Lexer(scanner.nextLine());
-        
-//        System.out.println("TOKENIZED QUERY");
-//        System.out.println(ExpressionParser.formPostfix(
-//                lexer.tokenizeQuery()
-//        ));
-//        System.out.println("************************************************************************************************************************************************************");
-//        System.out.println("AST AFTER PARSING");
-//        System.out.println(ExpressionParser.postfixToAST(
-//                ExpressionParser.formPostfix(
-//                        lexer.tokenizeQuery()
-//                )
-//        ));
+    public static void main(String[] args) throws Exception {
+        while(true) {
+            Scanner scanner = new Scanner(System.in);
+            String query = scanner.nextLine();
+            
+            if(query.equalsIgnoreCase("quit") || query.equalsIgnoreCase("q")) break;
+            
+            
+            Lexer lexer = new Lexer(query);
+            Parser parser = new Parser(lexer.tokenizeQuery());
 
-        Parser parser = new Parser(lexer.tokenizeQuery());
-        System.out.println(parser.parse());
+
+            Statement parsedStatement = parser.parse();
+
+            if(parsedStatement instanceof SelectStatement selectStatement) {
+                selectStatement.execute(null, true);
+            }
+            
+            //QueryExecutor queryExecutor = new QueryExecutor(parsedStatement);
+            
+            //queryExecutor.executeStatement();
+
+            //queryExecutor.executeStatement();
+            
+        }
     }
 }
